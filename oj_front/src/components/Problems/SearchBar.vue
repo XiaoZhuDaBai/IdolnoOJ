@@ -47,46 +47,77 @@ function doSearch() {
 <style scoped>
 .search-container {
   display: flex;
-  flex-wrap: wrap;
-  margin-bottom: 20px;
-  position: relative;
+  flex-direction: column;
+  gap: 16px;
   width: 100%;
+}
+
+@media (min-width: 768px) {
+  .search-container {
+    flex-direction: row;
+    align-items: stretch;
+  }
 }
 
 .search-bar {
   flex: 1;
   display: flex;
-  min-width: 200px;
-  margin-bottom: 10px;
-}
-
-@media (min-width: 576px) {
-  .search-bar {
-    margin-bottom: 0;
-  }
+  position: relative;
+  min-width: 0;
 }
 
 .search-bar input {
   flex: 1;
-  padding: 10px 15px;
-  border: 1px solid #ddd;
-  border-radius: 4px 0 0 4px;
-  font-size: 16px;
+  padding: 12px 16px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
   outline: none;
+  transition: all 0.2s ease;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-right: none;
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+.search-bar input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(51, 65, 85, 0.1);
+}
+
+.search-bar input::placeholder {
+  color: var(--color-text-tertiary);
 }
 
 .search-bar button {
-  padding: 10px 15px;
-  background-color: #3498db;
+  padding: 12px 24px;
+  background: var(--color-primary);
   color: white;
   border: none;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
   cursor: pointer;
-  font-size: 16px;
-  transition: background-color 0.2s;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 }
 
 .search-bar button:hover {
-  background-color: #2980b9;
+  background: #2d3f5f;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(51, 65, 85, 0.2);
+}
+
+.search-bar button:active {
+  transform: translateY(0);
+}
+
+.search-bar button::before {
+  content: '🔍';
+  font-size: 14px;
 }
 </style>

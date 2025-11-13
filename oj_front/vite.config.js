@@ -24,7 +24,7 @@ export default defineConfig({
         changeOrigin: true,
       },
       '/codesandbox': {
-        target: 'http://服务器:8082/', // 代码沙箱服务地址
+        target: 'http://172.31.184.233:8082/', // 代码沙箱服务地址
         changeOrigin: true
       }
     }

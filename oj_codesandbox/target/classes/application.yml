@@ -5,17 +5,32 @@ spring:
   datasource:
     # Mysql 5.7
     driver-class-name: com.mysql.jdbc.Driver
-    url: jdbc:mysql://192.168.70.1:3306/oj?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://192.168.70.1:3306/oj?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&rewriteBatchedStatements=true&useServerPrepStmts=true&cachePrepStmts=true
     username: test
     password: 123456
+    # 数据库连接池配置
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      connection-test-query: SELECT 1
 
   rabbitmq:
     listener:
       simple:
-        concurrency: 5      # 最小消费者数量
-        max-concurrency: 10 # 最大消费者数量
-        prefetch: 1         # 每次预取1条消息
-        acknowledge-mode: manual # 手动确认
+        concurrency: 50     # 增加最小消费者数量，支持更多并发
+        max-concurrency: 100 # 增加最大消费者数量
+        prefetch: 5         # 减少预取数量，避免内存占用过多
+        acknowledge-mode: auto # 自动确认
+        retry:
+          enabled: true     # 启用重试
+          initial-interval: 1000 # 初始重试间隔（毫秒）
+          max-attempts: 3   # 最大重试次数
+          multiplier: 1.0   # 重试间隔倍数
+          max-interval: 10000 # 最大重试间隔（毫秒）
+        default-requeue-rejected: false # 拒绝的消息不重新入队
     username: vm_xiaozhu
     password: Wlj041007@
     addresses: 43.140.224.79:5672
@@ -24,10 +39,242 @@ spring:
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
 
 server:
   port: 8082
 
 codesandbox:
-  type: "remote"
+  type: "native"
+
+# 容器池配置
+sandbox:
+  host-code-base-dir: ${user.dir}
+  docker:
+    host: tcp://localhost:2375
+    connect-timeout: 30000
+    read-timeout: 60000
+  monitoring:
+    health-check-interval: 30000
+    metrics-enabled: true
+  security:
+    enable-network-isolation: true
+    max-file-size: 10485760
+    allowed-system-calls: ["read", "write", "exit"]
+  languages:
+    java:
+      image-name: "openjdk:17-jdk-slim"
+      container-name-prefix: "judge-java"
+      volume-dir: "/app"
+      memory-limit: 536870912
+      memory-swap-limit: 536870912
+      cpu-limit: 1.0
+      pool-size: 5
+      compile-timeout: 30000
+      execute-timeout: 5000
+      compile-cmd: "javac -encoding UTF-8 %s"
+      run-cmd: "java -Xmx64m -XX:+UseSerialGC -XX:+TieredCompilation -XX:TieredStopAtLevel=1 -Dfile.encoding=UTF-8 -cp %s Main < %s"
+      need-compile: true
+      use-container-pool: true
+    cpp:
+      image-name: "gcc:latest"
+      container-name-prefix: "judge-cpp"
+      volume-dir: "/app"
+      memory-limit: 536870912
+      memory-swap-limit: 536870912
+      cpu-limit: 1.0
+      pool-size: 3
+      compile-timeout: 30000
+      execute-timeout: 5000
+      compile-cmd: "g++ -o Main %s"
+      run-cmd: "./Main < %s"
+      need-compile: true
+      use-container-pool: true
+    c:
+      image-name: "gcc:latest"
+      container-name-prefix: "judge-c"
+      volume-dir: "/app"
+      memory-limit: 268435456
+      memory-swap-limit: 268435456
+      cpu-limit: 1.0
+      pool-size: 3
+      compile-timeout: 30000
+      execute-timeout: 5000
+      compile-cmd: "gcc -o Main %s"
+      run-cmd: "./Main < %s"
+      need-compile: true
+      use-container-pool: true
+    python3:
+      image-name: "python:3.9-slim"
+      container-name-prefix: "judge-python"
+      volume-dir: "/app"
+      memory-limit: 268435456
+      memory-swap-limit: 268435456
+      cpu-limit: 1.0
+      pool-size: 4
+      compile-timeout: 10000
+      execute-timeout: 5000
+      compile-cmd: ""
+      run-cmd: "python %s < %s"
+      need-compile: false
+      use-container-pool: true
+    javascript:
+      image-name: "node:16-slim"
+      container-name-prefix: "judge-js"
+      volume-dir: "/app"
+      memory-limit: 268435456
+      memory-swap-limit: 268435456
+      cpu-limit: 1.0
+      pool-size: 4
+      compile-timeout: 10000
+      execute-timeout: 5000
+      compile-cmd: ""
+      run-cmd: "node %s < %s"
+      need-compile: false
+      use-container-pool: true
+    # 新增语言示例 - 只需要在这里配置！
+    go:
+      image-name: "golang:1.19-alpine"
+      container-name-prefix: "judge-go"
+      volume-dir: "/app"
+      memory-limit: 268435456
+      memory-swap-limit: 268435456
+      cpu-limit: 1.0
+      pool-size: 3
+      compile-timeout: 30000
+      execute-timeout: 5000
+      compile-cmd: "go build -o Main %s"
+      run-cmd: "./Main < %s"
+      need-compile: true
+      use-container-pool: true
+    rust:
+      image-name: "rust:1.70-alpine"
+      container-name-prefix: "judge-rust"
+      volume-dir: "/app"
+      memory-limit: 268435456
+      memory-swap-limit: 268435456
+      cpu-limit: 1.0
+      pool-size: 2
+      compile-timeout: 60000
+      execute-timeout: 5000
+      compile-cmd: "rustc -o Main %s"
+      run-cmd: "./Main < %s"
+      need-compile: true
+      use-container-pool: true
+# 错误模式配置
+error-patterns:
+  compile-errors:
+    java:
+      - "error:"
+      - "cannot find symbol"
+      - "incompatible types"
+      - "package does not exist"
+      - "class.*should be declared"
+      - "method.*not found"
+      - "constructor.*not found"
+    cpp:
+      - "error:"
+      - "undefined reference"
+      - "expected.*before"
+      - "no matching function"
+      - "incomplete type"
+      - "redeclaration"
+    c:
+      - "error:"
+      - "undefined reference"
+      - "expected.*before"
+      - "incomplete type"
+      - "redeclaration"
+    python3:
+      - "SyntaxError:"
+      - "IndentationError:"
+      - "NameError:"
+      - "TypeError:"
+      - "ImportError:"
+      - "ModuleNotFoundError:"
+    javascript:
+      - "SyntaxError:"
+      - "ReferenceError:"
+      - "TypeError:"
+      - "ImportError:"
+    go:
+      - "error:"
+      - "undefined:"
+      - "cannot use"
+      - "invalid operation"
+      - "missing return"
+      - "unused variable"
+      - "declared and not used"
+      - "imported and not used"
+    rust:
+      - "error:"
+      - "cannot find"
+      - "expected"
+      - "mismatched types"
+      - "unused variable"
+      - "unused import"
+      - "unreachable pattern"
+      - "borrow checker"
+  runtime-errors:
+    java:
+      - "Exception"
+      - "Error"
+      - "at java."
+      - "at sun."
+      - "Caused by:"
+      - "NullPointerException"
+      - "ArrayIndexOutOfBoundsException"
+      - "ClassCastException"
+      - "IllegalArgumentException"
+    cpp:
+      - "Segmentation fault"
+      - "Aborted"
+      - "terminate called"
+      - "std::exception"
+      - "runtime_error"
+    c:
+      - "Segmentation fault"
+      - "Aborted"
+      - "terminate called"
+    python3:
+      - "Exception:"
+      - "Error:"
+      - "Traceback"
+      - "ValueError:"
+      - "KeyError:"
+      - "IndexError:"
+    javascript:
+      - "Error:"
+      - "TypeError:"
+      - "ReferenceError:"
+      - "RangeError:"
+    go:
+      - "panic:"
+      - "runtime error:"
+      - "fatal error:"
+      - "goroutine"
+      - "stack trace"
+      - "index out of range"
+      - "nil pointer dereference"
+      - "concurrent map writes"
+    rust:
+      - "panic:"
+      - "thread"
+      - "note:"
+      - "stack backtrace"
+      - "index out of bounds"
+      - "attempt to divide by zero"
+      - "called `Result::unwrap()`"
+      - "called `Option::unwrap()`"
+
+# Actuator 配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,containerPool
+  endpoint:
+    health:
+      show-details: always
+  health:
+    defaults:
+      enabled: true

@@ -1,174 +1,146 @@
-# 🚀 idolnoOJ - 智能在线判题系统
+# idolnoOJ 在线判题系统
 
-> 一个功能较为完整的在线判题系统，支持多语言代码提交、竞赛日历、AI互动问答、题目检索优化和代码沙箱等服务。系统能够根据管理员预设的测试数据对用户代码进行执行和测评，且自主实现的代码沙箱可作为独立服务供其他开发者调用。
+idolnoOJ 是一个支持多语言代码提交的在线判题平台，内置竞赛日历、AI 辅助问答、题目检索和独立沙箱服务，适合比赛训练和课程实验场景。
 
-[![Java](https://img.shields.io/badge/Java-11+-orange.svg)](https://openjdk.java.net/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-2.7+-green.svg)](https://spring.io/projects/spring-boot)
-[![Vue](https://img.shields.io/badge/Vue-3.0+-blue.svg)](https://vuejs.org/)
-[![Docker](https://img.shields.io/badge/Docker-20.0+-blue.svg)](https://www.docker.com/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+## 核心功能
 
-## ✨ 核心特性
+- Docker 沙箱隔离执行用户代码，采用容器池机制复用运行中的容器，减少创建销毁开销，提升执行效率
+- 判题策略可扩展，支持自定义测试用例和多语言编译运行
+- RabbitMQ 异步调度判题任务，Redis 缓存热点数据，提高并发能力
+- 自动抓取编程竞赛信息，提供日历和订阅提醒
+- AI 问答模块为用户提供题解思路和代码优化建议
 
-### 🔒 安全可靠的代码执行
-- **Docker容器隔离**: 基于Docker的代码执行环境，防止恶意代码攻击
-- **多语言支持**: 基于模板方法，可支持多种编程语言，轻松扩展
-- **资源限制**: 内存、CPU、执行时间等资源使用限制
-- **沙箱隔离**: 完全隔离的执行环境，确保系统安全
-
-### 🚀 高性能架构设计
-- **异步处理**: Spring Boot异步任务，支持竞赛数据抓取
-- **消息队列**: RabbitMQ异步消费判题模块，提升系统并发能力
-- **缓存优化**: Redis缓存竞赛信息，显著提升查询性能
-- **微服务架构**: 代码沙箱可作为独立服务部署
-
-### 🤖 智能化功能
-- **AI互动问答**: 提供编程问题解答和代码优化建议
-- **智能判题**: 支持多种判题策略和自定义测试用例
-- **竞赛日历**: 自动抓取和展示各类编程竞赛信息
-- **题目检索**: 优化的搜索算法，快速定位目标题目
-
-## 🏗️ 系统架构
-
-### 整体架构图
-![系统架构](oj_backend/img/系统架构.png)
-
-### 判题逻辑流程
-![判题逻辑](oj_backend/img/判题逻辑.png)
-
-### 竞赛日历处理链
-![竞赛日历处理链](oj_backend/img/竞赛日历处理链.png)
-
-## 🛠️ 技术栈
-
-### 后端技术
-| 技术 | 版本 | 说明 |
-|------|------|------|
-| **Spring Boot** | 2.7+ | 主框架，提供Web服务和依赖注入 |
-| **MySQL** | 8.0+ | 主数据库，存储题目、用户、提交等信息 |
-| **MyBatis** | 3.5+ | ORM框架，简化数据库操作 |
-| **Redis** | 7.0+ | 缓存数据库，提升查询性能 |
-| **RabbitMQ** | 3.8+ | 消息队列，异步处理判题任务 |
-| **Docker** | 20.0+ | 容器化技术，提供代码执行环境 |
-| **JWT** | - | 身份认证和授权 |
-
-### 前端技术
-| 技术 | 版本 | 说明 |
-|------|------|------|
-| **Vue** | 3.0+ | 渐进式JavaScript框架 |
-| **Pinia** | 2.0+ | 状态管理库 |
-| **Vue Router** | 4.0+ | 前端路由管理 |
-| **Vite** | 4.0+ | 现代化构建工具 |
-| **Element Plus** | 2.0+ | UI组件库 |
-
-### 开发工具
-- **IDE**: IntelliJ IDEA / VS Code
-- **构建工具**: Maven
-- **版本控制**: Git
-- **容器管理**: Docker Desktop
-
-## 📁 项目结构
+## 系统结构
 
 ```
 idolnoOJ/
-├── oj_backend/           # 后端服务 (Spring Boot)
-│   ├── src/main/java/   # Java源代码
-│   ├── src/main/resources/ # 配置文件
-│   └── pom.xml          # Maven依赖配置
-├── oj_front/            # 前端应用 (Vue 3)
-│   ├── src/             # 源代码
-│   ├── public/          # 静态资源
-│   └── package.json     # 依赖配置
-├── oj_codesandbox/      # 代码沙箱服务
-│   ├── src/main/java/   # 沙箱核心代码
-│   └── pom.xml          # 依赖配置
-├── database.sql         # 数据库初始化脚本
-└── README.md            # 项目说明文档
+├── oj_backend/         后端服务，基于 Spring Boot
+├── oj_front/           前端应用，基于 Vue 3
+├── oj_codesandbox/     独立代码沙箱服务
+├── database.sql        初始化数据库脚本
+└── README.md
 ```
 
-## 🚀 快速开始
+## 判题工作流
 
-### 环境要求
-- Java 11+
-- Node.js 16+
-- MySQL 8.0+
-- Redis 7.0+
-- Docker 20.0+
-- RabbitMQ 3.8+
-
-### 1. 克隆项目
-```bash
-git clone https://github.com/XiaoZhuDaBai/idolnoOJ.git
-cd idolnoOJ
+```
+用户提交 →
+oj_front (调用 API) →
+oj_backend (写入数据库 / 推送 RabbitMQ judge.exchange) →
+oj_codesandbox (JUDGE_QUEUE 执行判题) →
+oj_codesandbox (RESULT_QUEUE 回写结果) →
+oj_backend (结果入库 / 推送 Redis) →
+前端轮询/推送展示
 ```
 
-### 2. 后端服务启动
-```bash
-cd oj_backend
-mvn clean install
-mvn spring-boot:run
-```
+## 技术栈
 
-### 3. 前端应用启动
-```bash
-cd oj_front
-npm install
-npm run dev
-```
+**后端**  
+Spring Boot 2.7、MyBatis、MySQL 8.0、Redis 7.0、RabbitMQ 3.8、Docker 20.0、JWT
 
-### 4. 代码沙箱启动
-```bash
-cd oj_codesandbox
-mvn clean install
-mvn spring-boot:run
-```
+**前端**  
+Vue 3、Pinia、Vue Router、Vite、Element Plus
 
-### 5. 数据库初始化
-```bash
-mysql -u root -p < database.sql
-```
+**开发工具**  
+Maven、Node.js 16、IntelliJ IDEA 或 VS Code、Docker Desktop
 
-## 📸 功能展示
+## 运行前置条件
 
-### 🏠 首页
+- Java 11 或更高
+- Node.js 16 与 npm
+- MySQL 8.0（初始化执行 `database.sql`）
+- Redis 7.0
+- RabbitMQ 3.8（开启虚拟主机与用户权限）
+- Docker 20+（远程 API `tcp://localhost:2375` 开启并限制访问）
+- Python 3.9（用于 `python/` 目录下的竞赛抓取脚本）与 `requests` 等依赖
+
+## 快速开始
+
+1. **准备环境**  
+   安装 Java 17、Node.js 16、MySQL 8.0、Redis 7.0、Docker 20.0、RabbitMQ 3.8。
+
+2. **克隆项目**
+   ```bash
+   git clone https://github.com/XiaoZhuDaBai/idolnoOJ.git
+   cd idolnoOJ
+   ```
+
+3. **启动后端**
+   ```bash
+   cd oj_backend
+   mvn clean install
+   mvn spring-boot:run
+   ```
+
+4. **启动前端**
+   ```bash
+   cd oj_front
+   npm install
+   npm run dev
+   ```
+
+5. **启动代码沙箱**
+   ```bash
+   cd oj_codesandbox
+   mvn clean install
+   mvn spring-boot:run
+   ```
+
+6. **初始化数据库**
+   ```bash
+   mysql -u root -p < database.sql
+   ```
+
+## 配置说明
+
+- **数据库**  
+  编辑 `oj_backend/src/main/resources/application.yml`，补全数据库地址、用户和密码：
+  ```yaml
+  spring:
+    datasource:
+      url: jdbc:mysql://localhost:3306/idolnooj
+      username: your_username
+      password: your_password
+  ```
+
+- **Redis**  
+  ```
+  spring:
+    redis:
+      host: localhost
+      port: 6379
+      password: your_password
+  ```
+
+- **Docker**  
+  启动 Docker 服务并确认当前用户具备运行容器的权限。
+
+## 配置管理
+
+- 建议使用环境变量或外部化配置（如 `application-prod.yml` + `SPRING_CONFIG_LOCATION`）覆盖敏感信息：数据库、Redis、RabbitMQ、DashScope、邮箱授权码等。
+- 关键键值：
+  - `spring.datasource.*`
+  - `spring.redis.*`
+  - `spring.rabbitmq.*`
+  - `dashscope.appId`
+  - `feedback.email.*`
+- 生产环境请禁用仓库中的默认凭据，统一通过部署平台密钥或 `.env` 文件注入。
+
+## 运维建议
+
+- 判题服务依赖 RabbitMQ 队列：`judge.exchange/judge.queue`、`result.exchange/result.queue`、`judge.dlx.queue`。监控队列积压并设置告警。
+- `oj_codesandbox` 提供 Actuator 端点（`/actuator/health`、`/actuator/metrics`、`/actuator/containerPool`）用于容器池健康检查。
+- 定时抓取任务读取 `schedule.contest.time`（默认 3 小时），爬虫脚本位于 `oj_backend/python/`，请定期更新依赖并校验运行环境。
+
+## 功能截图
+
 ![首页](oj_backend/img/首页.png)
-
-### 📚 题库管理
 ![题库](oj_backend/img/题库.png)
-
-### 💻 答题面板
 ![答题面板](oj_backend/img/答题面板.png)
-
-### 🖥️ 控制台输出
-![答题面板的控制台](oj_backend/img/答题面板的控制台.png)
-
-### 📅 竞赛日历
+![答题面板控制台](oj_backend/img/答题面板的控制台.png)
 ![竞赛日历](oj_backend/img/竞赛日历.png)
+![提交记录](oj_backend/img/查询提交.png)
 
-### 📊 提交记录
-![查询提交](oj_backend/img/查询提交.png)
+## 许可证
 
-## 🔧 配置说明
-
-### 数据库配置
-在 `oj_backend/src/main/resources/application.yml` 中配置数据库连接信息：
-
-```yaml
-spring:
-  datasource:
-    url: jdbc:mysql://localhost:3306/idolnooj
-    username: your_username
-    password: your_password
-```
-
-### Redis配置
-```yaml
-spring:
-  redis:
-    host: localhost
-    port: 6379
-    password: your_password
-```
-
-### Docker配置
-确保Docker服务已启动，并配置相应的权限。
+本项目使用 MIT License，详情见 `LICENSE`。

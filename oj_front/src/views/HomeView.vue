@@ -1,12 +1,20 @@
 <template>
   <div class="home-container">
-    <div class="left-column">
+    <!-- 顶部统计区域 -->
+    <div class="stats-section">
       <SubmissionAnalysis />
-      <RecentSubmissions />
     </div>
-    <div class="right-column">
-      <RecentContests />
+
+    <!-- 内容区域 -->
+    <div class="content-grid">
+      <div class="main-column">
+        <RecentSubmissions />
+      </div>
+      <div class="side-column">
+        <RecentContests />
+      </div>
     </div>
+
     <AiNamedXiaozhu />
   </div>
 </template>
@@ -20,51 +28,56 @@ import AiNamedXiaozhu from '@/components/comm/AiNamedXiaozhu.vue'
 
 <style scoped>
 .home-container {
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 24px;
   min-height: calc(100vh - 60px);
 }
 
-@media (min-width: 992px) {
-  .home-container {
-    flex-direction: row;
-    padding: 20px 5%;
-    gap: 20px;
-  }
+/* 统计区域 - 全宽 */
+.stats-section {
+  margin-bottom: 24px;
 }
 
-.left-column {
-  flex: 2;
-  margin-bottom: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+/* 内容网格 */
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
 }
 
 @media (min-width: 992px) {
-  .left-column {
-    margin-right: 0;
-    margin-bottom: 0;
+  .content-grid {
+    grid-template-columns: 1.5fr 1fr;
   }
 }
 
-.right-column {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+.main-column,
+.side-column {
+  min-width: 0; /* 防止内容溢出 */
 }
 
-/* 确保子组件不会溢出 */
-.left-column > *,
-.right-column > * {
-  flex-shrink: 0;
-}
-
+/* AI助手定位 */
 :deep(.ai-assistant) {
   position: fixed !important;
-  bottom: 20px;
-  right: 20px;
+  bottom: 24px;
+  right: 24px;
   z-index: 1000;
 }
+
+/* 响应式优化 */
+@media (max-width: 768px) {
+  .home-container {
+    padding: 16px 12px;
+  }
+
+  .stats-section {
+    margin-bottom: 16px;
+  }
+
+  .content-grid {
+    gap: 16px;
+  }
+}
 </style>
+

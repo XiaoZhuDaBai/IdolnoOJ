@@ -85,37 +85,62 @@ onMounted(() => {
 
 <style scoped>
 .wa-container {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: transparent;
   overflow: hidden;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 0 0 16px 0;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
 }
 
 .header h2 {
   margin: 0;
-  font-size: 16px;
-  color: #333;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: -0.2px;
 }
 
 .badge {
-  background: #ff4d4f;
+  background: var(--color-error);
   color: white;
-  padding: 2px 6px;
-  border-radius: 10px;
-  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 600;
+  min-width: 20px;
+  text-align: center;
 }
 
 .scroll-container {
-  max-height: 300px;
+  flex: 1;
   overflow-y: auto;
+  min-height: 0;
+}
+
+.scroll-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-container::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 2px;
+}
+
+.scroll-container::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-tertiary);
 }
 
 .wa-list {
@@ -127,14 +152,17 @@ onMounted(() => {
 .wa-item {
   display: flex;
   flex-direction: column;
-  padding: 7px 16px;
+  gap: 6px;
+  padding: 12px 0;
   cursor: pointer;
-  transition: background-color 0.2s;
-  border-bottom: 1px solid #f5f5f5;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .wa-item:hover {
-  background-color: #f9f9f9;
+  background: rgba(51, 65, 85, 0.04);
+  padding: 12px 0 12px 8px;
+  margin: 0 -8px 0 0;
 }
 
 .wa-item:last-child {
@@ -142,45 +170,53 @@ onMounted(() => {
 }
 
 .problem-id {
-  font-weight: bold;
-  color: #1890ff;
-  margin-bottom: 4px;
-  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary);
+  font-size: 13px;
+  font-family: 'Courier New', monospace;
 }
 
 .problem-title {
-  color: #333;
-  margin-bottom: 4px;
-  font-size: 14px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .attempt-count {
-  color: #ff4d4f;
-  font-size: 12px;
+  color: var(--color-error);
+  font-size: 11px;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.attempt-count::before {
+  content: '🔄';
+  font-size: 10px;
 }
 
 .footer {
-  padding: 16px;
+  padding: 24px 0;
   text-align: center;
-  color: #999;
-  font-size: 14px;
+  color: var(--color-text-tertiary);
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
 }
 
-/* 滚动条样式 */
-.scroll-container::-webkit-scrollbar {
-  width: 6px;
-}
-
-.scroll-container::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 0, 0, 0.2);
-  border-radius: 3px;
-}
-
-.scroll-container::-webkit-scrollbar-track {
-  background-color: #f1f1f1;
+.footer::before {
+  content: '🎉';
+  font-size: 32px;
+  opacity: 0.6;
 }
 
 .loading-state {
@@ -188,22 +224,21 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 16px;
-  color: #999;
+  padding: 60px 0;
+  color: var(--color-text-tertiary);
+  gap: 12px;
 }
 
 .loading-spinner {
-  width: 24px;
-  height: 24px;
-  border: 2px solid #f3f3f3;
-  border-top: 2px solid #ff4d4f;
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-error);
   border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 8px;
+  animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  to { transform: rotate(360deg); }
 }
 </style>

@@ -1,6 +1,11 @@
+autoDeleteData: false
 autoDetectedPackages:
 - oj.oj_backend
+autoKeepDataNum: 10
 enableAutoDetect: true
+entryDisplayConfig:
+  excludedPathPatterns: []
+  skipJsCss: true
 funcDisplayConfig:
   skipConstructors: false
   skipFieldAccess: true
@@ -13,8 +18,16 @@ ignoreSameClassCall: null
 ignoreSamePackageCall: null
 includedPackagePrefixes: null
 includedParentClasses: null
+maxColSize: 32
+maxNumFirst: 12
+maxNumFirstImportant: 1024
+maxNumHash: 3
+maxNumHashImportant: 256
+maxObjectDepth: 4
+maxStrSize: 4096
 name: xcodemap-filter
-recordMode: smart
+openMainWindow: true
+recordMode: manual
 sourceDisplayConfig:
   color: blue
 startOnDebug: false

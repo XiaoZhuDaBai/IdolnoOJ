@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useContestStore } from '@/stores/contestStore'
 
 const contestStore = useContestStore()
@@ -10,8 +10,22 @@ const contestStatusText = {
   ended: '已结束'
 }
 
+const statusFilter = ref('all') // all, upcoming, running, ended
+
 const filteredContests = computed(() => {
-  return contestStore.contests
+  if (statusFilter.value === 'all') {
+    return contestStore.contests
+  }
+  return contestStore.contests.filter(c => c.status === statusFilter.value)
+})
+
+const statusCounts = computed(() => {
+  const counts = { all: 0, upcoming: 0, running: 0, ended: 0 }
+  contestStore.contests.forEach(c => {
+    counts.all++
+    counts[c.status]++
+  })
+  return counts
 })
 
 let timer = null
@@ -31,318 +45,369 @@ onUnmounted(() => {
 
 <template>
   <div class="contests-view">
-    <div class="contests-header">
-      <div class="header-main">
-        <h1>比赛列表</h1>
-        <div v-if="contestStore.getLastUpdateTime()" class="update-time">
-          最后更新: {{ contestStore.getLastUpdateTime() }}
-        </div>
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-content">
+        <h1 class="page-title">比赛列表</h1>
+        <p class="page-subtitle">参与各大平台的编程竞赛，提升实战能力</p>
       </div>
     </div>
 
-    <div v-if="contestStore.loading" class="loading">
-      <div class="loading-spinner"></div>
-      <span>加载中...</span>
-    </div>
-
-    <div v-else-if="contestStore.error" class="error">
-      <div class="error-icon">!</div>
-      <div class="error-content">
-        <div class="error-message">{{ contestStore.error }}</div>
-      </div>
-    </div>
-
-    <div v-else class="contests-list">
-      <div
-        v-for="contest in filteredContests"
-        :key="contest.id"
-        class="contest-item"
-      >
-        <div class="contest-time">
-          <div class="contest-date">{{ contestStore.formatDate(contest.startTime) }}</div>
-          <div class="contest-duration">{{ contest.duration.toFixed(1) }}小时</div>
-          <div v-if="contest.status === 'upcoming'" class="countdown">
-            {{ contestStore.formatCountdown(contest.startTime) }}
-          </div>
-        </div>
-        <div class="contest-info">
-          <a
-            :href="contest.link"
-            target="_blank"
-            class="contest-name"
-          >
-            {{ contest.name }}
-            <span class="contest-oj-tag" :data-oj="contest.oj">{{ contest.oj }}</span>
-          </a>
-          <div class="contest-meta">
-            <span class="contest-status" :class="contest.status">
-              {{ contestStatusText[contest.status] }}
-            </span>
-            <span
-              v-if="contest.phase"
-              class="contest-phase"
-              :data-phase="contest.phase"
+    <!-- 主要内容区域 -->
+    <div class="content-wrapper">
+      <!-- 主要内容区 -->
+      <div class="main-section">
+        <!-- 筛选器卡片 -->
+        <div class="filter-card">
+          <div class="filter-tabs">
+            <button
+              v-for="status in ['all', 'upcoming', 'running', 'ended']"
+              :key="status"
+              :class="['filter-tab', { active: statusFilter === status }]"
+              @click="statusFilter = status"
             >
-              {{ contest.phase }}
-            </span>
+              <span class="tab-label">
+                {{ status === 'all' ? '全部' : contestStatusText[status] }}
+              </span>
+              <span class="tab-count">{{ statusCounts[status] }}</span>
+            </button>
+          </div>
+
+          <div v-if="contestStore.getLastUpdateTime()" class="update-time">
+            <span class="update-icon">🔄</span>
+            最后更新: {{ contestStore.getLastUpdateTime() }}
           </div>
         </div>
-        <div class="contest-action">
-          <a
-            v-if="contest.status === 'upcoming'"
-            :href="contest.link"
-            target="_blank"
-            class="btn register"
-          >
-            立即查看
-          </a>
-          <a
-            v-else-if="contest.status === 'running'"
-            :href="contest.link"
-            target="_blank"
-            class="btn enter"
-          >
-            进入比赛
-          </a>
-          <div v-else class="contest-ended">已结束</div>
+
+        <!-- 比赛列表卡片 -->
+        <div class="contests-card">
+          <!-- 加载状态 -->
+          <div v-if="contestStore.loading" class="loading-state">
+            <div class="loading-spinner"></div>
+            <span class="loading-text">加载中...</span>
+          </div>
+
+          <!-- 错误状态 -->
+          <div v-else-if="contestStore.error" class="error-state">
+            <div class="error-icon">⚠️</div>
+            <div class="error-message">{{ contestStore.error }}</div>
+            <button class="retry-btn" @click="contestStore.fetchContests()">
+              重试
+            </button>
+          </div>
+
+          <!-- 空状态 -->
+          <div v-else-if="filteredContests.length === 0" class="empty-state">
+            <div class="empty-icon">📅</div>
+            <div class="empty-text">{{ statusFilter === 'all' ? '当前没有比赛' : '没有符合条件的比赛' }}</div>
+          </div>
+
+          <!-- 比赛列表 -->
+          <div v-else class="contests-list">
+            <div
+              v-for="contest in filteredContests"
+              :key="contest.id"
+              class="contest-item"
+            >
+              <div class="contest-header">
+                <div class="contest-time-info">
+                  <div class="contest-date">
+                    <span class="date-icon">📅</span>
+                    {{ contestStore.formatDate(contest.startTime) }}
+                  </div>
+                  <div class="contest-duration">
+                    <span class="duration-icon">⏱️</span>
+                    {{ contest.duration.toFixed(1) }}小时
+                  </div>
+                </div>
+                <div class="contest-status-badge" :class="contest.status">
+                  {{ contestStatusText[contest.status] }}
+                </div>
+              </div>
+
+              <div class="contest-content">
+                <a
+                  :href="contest.link"
+                  target="_blank"
+                  class="contest-name"
+                  rel="noopener noreferrer"
+                >
+                  {{ contest.name }}
+                </a>
+
+                <div class="contest-meta">
+                  <span class="contest-oj-tag" :data-oj="contest.oj">
+                    {{ contest.oj }}
+                  </span>
+                  <span
+                    v-if="contest.phase"
+                    class="contest-phase-tag"
+                    :data-phase="contest.phase"
+                  >
+                    {{ contest.phase }}
+                  </span>
+                </div>
+
+                <div v-if="contest.status === 'upcoming'" class="countdown-wrapper">
+                  <span class="countdown-icon">⏰</span>
+                  <span class="countdown-text">
+                    {{ contestStore.formatCountdown(contest.startTime) }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="contest-action">
+                <a
+                  v-if="contest.status === 'upcoming'"
+                  :href="contest.link"
+                  target="_blank"
+                  class="action-btn upcoming"
+                  rel="noopener noreferrer"
+                >
+                  <span class="btn-icon">👀</span>
+                  立即查看
+                </a>
+                <a
+                  v-else-if="contest.status === 'running'"
+                  :href="contest.link"
+                  target="_blank"
+                  class="action-btn running"
+                  rel="noopener noreferrer"
+                >
+                  <span class="btn-icon">🚀</span>
+                  进入比赛
+                </a>
+                <div v-else class="action-ended">
+                  <span class="ended-icon">✓</span>
+                  已结束
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div v-if="!contestStore.loading && !contestStore.error && filteredContests.length === 0" class="no-contests">
-      <div class="no-contests-icon">📅</div>
-      <div class="no-contests-text">当前没有比赛</div>
+      <!-- 右侧边栏 -->
+      <aside class="sidebar-section">
+        <!-- 比赛统计卡片 -->
+        <div class="sidebar-card stats-card">
+          <h3 class="card-title">比赛统计</h3>
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-value">{{ statusCounts.all }}</div>
+              <div class="stat-label">总计</div>
+            </div>
+            <div class="stat-item upcoming">
+              <div class="stat-value">{{ statusCounts.upcoming }}</div>
+              <div class="stat-label">未开始</div>
+            </div>
+            <div class="stat-item running">
+              <div class="stat-value">{{ statusCounts.running }}</div>
+              <div class="stat-label">进行中</div>
+            </div>
+            <div class="stat-item ended">
+              <div class="stat-value">{{ statusCounts.ended }}</div>
+              <div class="stat-label">已结束</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 比赛提示卡片 -->
+        <div class="sidebar-card tips-card">
+          <h3 class="card-title">参赛提示</h3>
+          <div class="tips-list">
+            <div class="tip-item">
+              <span class="tip-icon">💡</span>
+              <span class="tip-text">提前熟悉比赛平台规则</span>
+            </div>
+            <div class="tip-item">
+              <span class="tip-icon">⏰</span>
+              <span class="tip-text">注意比赛开始时间</span>
+            </div>
+            <div class="tip-item">
+              <span class="tip-icon">📝</span>
+              <span class="tip-text">准备好常用代码模板</span>
+            </div>
+            <div class="tip-item">
+              <span class="tip-icon">🎯</span>
+              <span class="tip-text">先易后难，稳扎稳打</span>
+            </div>
+          </div>
+        </div>
+      </aside>
     </div>
   </div>
 </template>
 
 <style scoped>
 .contests-view {
-  max-width: 1200px;
+  min-height: calc(100vh - var(--header-height, 64px));
+  background: var(--color-bg);
+}
+
+/* 页面头部 */
+.page-header {
+  background: linear-gradient(135deg, var(--color-primary) 0%, #5b7fc9 100%);
+  padding: 32px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.header-content {
+  max-width: 1400px;
   margin: 0 auto;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: white;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.5px;
+}
+
+.page-subtitle {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+  font-weight: 400;
+}
+
+/* 内容包装器 */
+.content-wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 24px 24px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+@media (min-width: 1024px) {
+  .content-wrapper {
+    grid-template-columns: 1fr 340px;
+  }
+}
+
+/* 主要内容区域 */
+.main-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+/* 筛选器卡片 */
+.filter-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
   padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
-.contests-header {
-  margin-bottom: 30px;
+.filter-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
-.header-main {
+.filter-tab {
   display: flex;
   align-items: center;
-  gap: 15px;
-  margin-bottom: 20px;
+  gap: 8px;
+  padding: 8px 16px;
+  background: transparent;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.contests-header h1 {
-  font-size: 24px;
-  color: #2c3e50;
-  margin: 0;
+.filter-tab:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: rgba(79, 109, 188, 0.05);
+}
+
+.filter-tab.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+}
+
+.tab-label {
+  font-weight: 500;
+}
+
+.tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.filter-tab.active .tab-count {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.filter-tab:not(.active) .tab-count {
+  background: var(--color-border);
+  color: var(--color-text-tertiary);
 }
 
 .update-time {
-  font-size: 14px;
-  color: #666;
-  font-style: italic;
-}
-
-.contests-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.contest-item {
   display: flex;
   align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+}
+
+.update-icon {
+  font-size: 12px;
+}
+
+/* 比赛列表卡片 */
+.contests-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
   padding: 20px;
-  border-radius: 8px;
-  background-color: #fff;
-  transition: all 0.2s;
-  border: 1px solid #eee;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--color-border);
 }
 
-.contest-item:hover {
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-  transform: translateY(-1px);
-}
-
-.contest-time {
-  min-width: 180px;
-  text-align: center;
-  margin-right: 20px;
+/* 状态样式 */
+.loading-state,
+.error-state,
+.empty-state {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
-}
-
-.contest-date {
-  font-weight: bold;
-  color: #2c3e50;
-}
-
-.contest-duration {
-  font-size: 13px;
-  color: #7f8c8d;
-}
-
-.countdown {
-  font-size: 13px;
-  color: #e74c3c;
-  font-weight: 500;
-}
-
-.contest-info {
-  flex: 1;
-}
-
-.contest-name {
-  font-size: 16px;
-  font-weight: bold;
-  margin-bottom: 8px;
-  color: #27ae60;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.contest-name:hover {
-  color: #219653;
-}
-
-.contest-oj-tag {
-  font-size: 12px;
-  padding: 2px 8px;
-  background: #f0f0f0;
-  border-radius: 4px;
-  color: #666;
-}
-
-/* AtCoder specific styles */
-.contest-oj-tag[data-oj="AtCoder"] {
-  background: #2c3e50;
-  color: white;
-}
-
-.contest-phase[data-phase="初级"] {
-  background: #3498db;
-  color: white;
-}
-
-.contest-phase[data-phase="常规"] {
-  background: #e74c3c;
-  color: white;
-}
-
-.contest-phase[data-phase="高级"] {
-  background: #2ecc71;
-  color: white;
-}
-
-.contest-phase[data-phase="启发式算法"] {
-  background: #9b59b6;
-  color: white;
-}
-
-.contest-phase[data-phase="其他"] {
-  background: #95a5a6;
-  color: white;
-}
-
-.contest-meta {
-  display: flex;
-  align-items: center;
-  font-size: 13px;
-  color: #7f8c8d;
-}
-
-.contest-status {
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-weight: 500;
-  margin-right: 12px;
-}
-
-.contest-status.upcoming {
-  background-color: #fff3e0;
-  color: #f57c00;
-}
-
-.contest-status.running {
-  background-color: #e8f5e9;
-  color: #2e7d32;
-}
-
-.contest-status.ended {
-  background-color: #f5f5f5;
-  color: #757575;
-}
-
-.contest-phase {
-  font-size: 12px;
-  color: #666;
-  background: #f5f5f5;
-  padding: 2px 8px;
-  border-radius: 4px;
-}
-
-.contest-action {
-  flex-shrink: 0;
-  width: 100px;
-  text-align: right;
-}
-
-.btn {
-  border: none;
-  padding: 6px 14px;
-  border-radius: 4px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-decoration: none;
-  display: inline-block;
-}
-
-.btn.register {
-  background-color: #3498db;
-  color: white;
-}
-
-.btn.register:hover {
-  background-color: #2878b5;
-}
-
-.btn.enter {
-  background-color: #27ae60;
-  color: white;
-}
-
-.btn.enter:hover {
-  background-color: #219653;
-}
-
-.contest-ended {
-  color: #a0a0a0;
-  font-size: 14px;
-}
-
-.loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 40px;
-  color: #666;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 16px;
 }
 
 .loading-spinner {
-  width: 30px;
-  height: 30px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #3498db;
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-border);
+  border-top: 3px solid var(--color-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
@@ -352,52 +417,478 @@ onUnmounted(() => {
   100% { transform: rotate(360deg); }
 }
 
-.error {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  padding: 20px;
-  background: #fff2f0;
-  border: 1px solid #ffccc7;
-  border-radius: 8px;
-  color: #ff4d4f;
+.loading-text {
+  color: var(--color-text-secondary);
+  font-size: 14px;
 }
 
 .error-icon {
-  width: 24px;
-  height: 24px;
-  background: #ff4d4f;
+  font-size: 48px;
+}
+
+.error-message {
+  color: var(--color-danger);
+  font-size: 14px;
+  text-align: center;
+}
+
+.retry-btn {
+  margin-top: 8px;
+  padding: 8px 20px;
+  background: var(--color-primary);
   color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.error-content {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.retry-btn:hover {
+  background: #5b7fc9;
+  transform: translateY(-1px);
 }
 
-.no-contests {
+.empty-icon {
+  font-size: 64px;
+  opacity: 0.5;
+}
+
+.empty-text {
+  color: var(--color-text-tertiary);
+  font-size: 14px;
+}
+
+/* 比赛列表 */
+.contests-list {
   display: flex;
   flex-direction: column;
+  gap: 16px;
+}
+
+.contest-item {
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.contest-item:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 12px rgba(79, 109, 188, 0.15);
+  transform: translateY(-2px);
+}
+
+.contest-header {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.contest-time-info {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+
+.contest-date,
+.contest-duration {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.date-icon,
+.duration-icon {
+  font-size: 14px;
+}
+
+.contest-status-badge {
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.contest-status-badge.upcoming {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+.contest-status-badge.running {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+}
+
+.contest-status-badge.ended {
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+}
+
+.contest-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+}
+
+.contest-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text);
+  text-decoration: none;
+  transition: color 0.2s ease;
+  line-height: 1.4;
+}
+
+.contest-name:hover {
+  color: var(--color-primary);
+}
+
+.contest-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.contest-oj-tag,
+.contest-phase-tag {
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.contest-oj-tag {
+  background: var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.contest-oj-tag[data-oj="Codeforces"] {
+  background: #1f8acb;
+  color: white;
+}
+
+.contest-oj-tag[data-oj="AtCoder"] {
+  background: #000;
+  color: white;
+}
+
+.contest-oj-tag[data-oj="LeetCode"] {
+  background: #ffa116;
+  color: white;
+}
+
+.contest-phase-tag {
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.contest-phase-tag[data-phase="初级"] {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+.contest-phase-tag[data-phase="常规"] {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+.contest-phase-tag[data-phase="高级"] {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border-color: #10b981;
+}
+
+.contest-phase-tag[data-phase="启发式算法"] {
+  background: rgba(168, 85, 247, 0.1);
+  color: #a855f7;
+  border-color: #a855f7;
+}
+
+.countdown-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.05);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.countdown-icon {
+  font-size: 16px;
+}
+
+.countdown-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ef4444;
+}
+
+.contest-action {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.action-btn.upcoming {
+  background: var(--color-primary);
+  color: white;
+}
+
+.action-btn.upcoming:hover {
+  background: #5b7fc9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(79, 109, 188, 0.3);
+}
+
+.action-btn.running {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.action-btn.running:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+.btn-icon {
+  font-size: 16px;
+}
+
+.action-ended {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  color: var(--color-text-tertiary);
+  font-size: 14px;
+}
+
+.ended-icon {
+  font-size: 14px;
+}
+
+/* 侧边栏 */
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sidebar-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--color-border);
+}
+
+.card-title {
+  margin: 0 0 16px 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text);
+  letter-spacing: -0.2px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* 统计卡片 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.stat-item {
+  padding: 16px;
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  text-align: center;
+  border: 1px solid var(--color-border);
+  transition: all 0.2s ease;
+}
+
+.stat-item:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-2px);
+}
+
+.stat-item.upcoming {
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.stat-item.running {
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.stat-item.ended {
+  border-color: rgba(107, 114, 128, 0.3);
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+
+.stat-item.upcoming .stat-value {
+  color: #f59e0b;
+}
+
+.stat-item.running .stat-value {
+  color: #10b981;
+}
+
+.stat-item.ended .stat-value {
+  color: #6b7280;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 500;
+}
+
+/* 提示卡片 */
+.tips-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tip-item {
+  display: flex;
+  align-items: flex-start;
   gap: 10px;
-  padding: 40px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  color: #7f8c8d;
+  padding: 12px;
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
 }
 
-.no-contests-icon {
-  font-size: 32px;
+.tip-item:hover {
+  background: rgba(79, 109, 188, 0.05);
 }
 
-.no-contests-text {
-  font-style: italic;
+.tip-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.tip-text {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+  .page-header {
+    padding: 24px 16px;
+    margin-bottom: 16px;
+  }
+
+  .page-title {
+    font-size: 24px;
+  }
+
+  .page-subtitle {
+    font-size: 13px;
+  }
+
+  .content-wrapper {
+    padding: 0 16px 16px;
+    gap: 16px;
+  }
+
+  .filter-card,
+  .contests-card,
+  .sidebar-card {
+    padding: 16px;
+  }
+
+  .filter-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-tabs {
+    width: 100%;
+  }
+
+  .filter-tab {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .contest-item {
+    padding: 16px;
+  }
+
+  .contest-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .contest-time-info {
+    flex-wrap: wrap;
+  }
+
+  .contest-name {
+    font-size: 16px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 平板端优化 */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .page-header {
+    padding: 28px 20px;
+  }
+
+  .page-title {
+    font-size: 26px;
+  }
+
+  .content-wrapper {
+    padding: 0 20px 20px;
+    gap: 20px;
+  }
 }
 </style>

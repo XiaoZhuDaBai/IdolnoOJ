@@ -128,15 +128,15 @@ function initChart() {
         {
           label: '提交总数',
           data: totalData,
-          backgroundColor: 'rgba(151, 151, 151, 0.7)',
-          borderRadius: 4,
+          backgroundColor: '#94a3b8',
+          borderRadius: 6,
           borderWidth: 0
         },
         {
           label: '通过数',
           data: acceptedData,
-          backgroundColor: 'rgba(52, 211, 153, 0.8)',
-          borderRadius: 4,
+          backgroundColor: '#10b981',
+          borderRadius: 6,
           borderWidth: 0
         }
       ]
@@ -218,53 +218,55 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .submission-analysis {
-  margin-bottom: 20px;
+  margin-bottom: 0;
 }
 
 .analysis-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: var(--spacing-lg);
 }
 
 .time-range {
-  color: #7f8c8d;
-  font-size: 14px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .chart-container {
   position: relative;
-  height: 250px;
-  margin: 20px 0;
+  height: 280px;
+  margin: var(--spacing-lg) 0;
 }
 
 .chart-legend {
   display: flex;
   justify-content: center;
-  gap: 20px;
-  margin-top: 10px;
+  gap: var(--spacing-lg);
+  margin-top: var(--spacing-md);
 }
 
 .legend-item {
   display: flex;
   align-items: center;
-  font-size: 14px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
 }
 
 .legend-color {
-  width: 16px;
-  height: 16px;
-  margin-right: 8px;
-  border-radius: 4px;
+  width: 12px;
+  height: 12px;
+  margin-right: var(--spacing-sm);
+  border-radius: 2px;
 }
 
 .legend-color.total {
-  background-color: rgba(151, 151, 151, 0.7);
+  background-color: #94a3b8;
 }
 
 .legend-color.accepted {
-  background-color: rgba(52, 211, 153, 0.8);
+  background-color: var(--color-success);
 }
 
 .loading-state {
@@ -273,17 +275,17 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #7f8c8d;
+  color: var(--color-text-tertiary);
+  gap: var(--spacing-md);
 }
 
 .loading-spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #34d399;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--color-border);
+  border-top: 2px solid var(--color-primary);
   border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 10px;
+  animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {

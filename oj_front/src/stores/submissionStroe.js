@@ -27,7 +27,10 @@ export const useSubmissionStore = defineStore('submission', () => {
       memory_limit: '内存超限',
       runtime_error: '运行错误',
       compile_error: '编译错误',
-      other: '非零错误'
+      non_zero_exit: '非零异常',
+      pending: '等待中',
+      judging: '判题中',
+      other: '其他'
     }
     return statusMap[status] || status
   }
@@ -53,6 +56,11 @@ export const useSubmissionStore = defineStore('submission', () => {
 
   // 映射状态文本到状态码
   const mapStatus = (commitCase) => {
+    // 如果 commitCase 为空或未定义，返回等待中
+    if (!commitCase) {
+      return 'pending'
+    }
+
     const statusMap = {
       '通过': 'accepted',
       '答案错误': 'wrong_answer',
@@ -60,7 +68,10 @@ export const useSubmissionStore = defineStore('submission', () => {
       '内存超限': 'memory_limit',
       '运行错误': 'runtime_error',
       '编译错误': 'compile_error',
-      '提交超时': 'time_limit'
+      '提交超时': 'time_limit',
+      '等待中': 'pending',
+      '判题中': 'judging',
+      '非零异常': 'non_zero_exit'
     }
 
     // 尝试直接匹配
@@ -75,12 +86,8 @@ export const useSubmissionStore = defineStore('submission', () => {
       }
     }
 
-    // 特殊情况处理
-    if (commitCase.includes('非零异常')) {
-      return 'runtime_error'
-    }
-
-    return 'other'
+    // 默认返回 pending（等待中）而不是 other
+    return 'pending'
   }
 
   // 获取总记录数

@@ -2,10 +2,12 @@ package oj.oj_codesandbox.judge.entity;
 
 import lombok.Data;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Data
-public class JudgeInfo {
+public class JudgeInfo implements Serializable {
+    private static final long serialVersionUID = 1L;
     /**
      * 程序执行信息
      */

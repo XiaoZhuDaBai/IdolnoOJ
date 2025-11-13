@@ -56,39 +56,6 @@ public class DockerUtils {
         }
     }
 
-    @Deprecated
-    public static CreateContainerResponse createResponse(DockerClient dockerClient) {
-        String imageId;
-        try (InputStream context = createBuildContextFromCurrentDir()) {
-            // 调试：打印 TAR 内容
-            debugTar(context);
-            // 重新生成上下文流（调试后流已关闭，需重新创建）
-            try (InputStream freshContext = createBuildContextFromCurrentDir()) {
-                BuildImageResultCallback callback = new BuildImageResultCallback() {
-                    @Override
-                    public void onNext(BuildResponseItem item) {
-                        log.info("[DOCKER LOG] " + item.getStream());
-                        super.onNext(item);
-                    }
-                };
-                imageId = dockerClient.buildImageCmd(freshContext)
-                        .withTags(Set.of("my-test-run"))
-                        .exec(callback)
-                        .awaitImageId();
-                log.info("镜像构建成功: " + imageId);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        return dockerClient.createContainerCmd(imageId)
-                .withHostConfig(
-                    HostConfig.newHostConfig()
-                        .withMemory(1024L * 1024L * 256)
-                )
-                .exec();
-    }
-
     public static CreateContainerResponse createResponsePlus(DockerClient dockerClient, String imageName, String[] CMD, String path) {
         log.info("[DOCKER CONTAINER] 开始创建容器");
         log.info("[DOCKER CONTAINER] 镜像名称: " + imageName);
@@ -102,9 +69,12 @@ public class DockerUtils {
                         .withBinds(
                                 new Bind(path, new Volume("/app"), AccessMode.rw)
                         )
-                        .withMemory(256 * 1024 * 1024L)
-                        .withMemorySwap(0L) // 禁用swap
-                        .withCpuCount(2L)
+                        .withMemory(64 * 1024 * 1024L)  // 64MB内存限制
+                        .withMemorySwap(64 * 1024 * 1024L)  // 64MB swap限制
+                        .withCpuCount(1L)  // 1个CPU核心
+                        .withCpuQuota(100000L)  // CPU配额：1核心
+                        .withCpuPeriod(100000L)  // CPU周期：100ms
+                        .withOomKillDisable(false)  // 启用OOM Killer
                 )
                 .withTty(true)
                 .withNetworkDisabled(true)
@@ -118,51 +88,6 @@ public class DockerUtils {
         return response;
     }
 
-    // 调试方法：打印 TAR 内容
-    @Deprecated
-    private static void debugTar(InputStream tarStream) throws IOException {
-        try (TarArchiveInputStream tarInput = new TarArchiveInputStream(tarStream)) {
-            TarArchiveEntry entry;
-            while ((entry = tarInput.getNextTarEntry()) != null) {
-                log.info("[TAR ENTRY] " + entry.getName());
-            }
-        }
-    }
-
-    // 将当前目录打包为 TAR 输入流
-    @Deprecated
-    private static InputStream createBuildContextFromCurrentDir() throws IOException {
-        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        try (TarArchiveOutputStream tar = new TarArchiveOutputStream(bos)) {
-            // 递归添加当前目录所有文件
-            addDirectoryToTar(tar, Path.of(".").toFile(), "");
-            tar.finish();
-        }
-        return new ByteArrayInputStream(bos.toByteArray());
-    }
-    // 递归添加目录到 TAR
-    @Deprecated
-    private static void addDirectoryToTar(TarArchiveOutputStream tar, File dir, String basePath) throws IOException {
-        for (File file : Objects.requireNonNull(dir.listFiles())) {
-            String entryName = basePath.isEmpty() ? file.getName() : basePath + "/" + file.getName();
-            if (file.isDirectory()) {
-                addDirectoryToTar(tar, file, entryName);
-            } else {
-                // 跳过隐藏文件（如 .git）
-                if (!file.getName().startsWith(".")) {
-                    addFileToTar(tar, file, entryName);
-                }
-            }
-        }
-    }
-    // 添加单个文件到 TAR
-    @Deprecated
-    private static void addFileToTar(TarArchiveOutputStream tar, File file, String entryName) throws IOException {
-        TarArchiveEntry entry = new TarArchiveEntry(file, entryName);
-        tar.putArchiveEntry(entry);
-        Files.copy(file.toPath(), tar);
-        tar.closeArchiveEntry();
-    }
 
     public static DockerClient createDockerClient() {
         DockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()

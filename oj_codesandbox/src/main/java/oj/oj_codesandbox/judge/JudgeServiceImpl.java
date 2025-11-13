@@ -16,26 +16,23 @@ import oj.oj_codesandbox.model.dto.CommitCase;
 import oj.oj_codesandbox.model.dto.Question;
 import oj.oj_codesandbox.model.dto.UserCommit;
 import oj.oj_codesandbox.model.vo.CommitResultVo;
-import oj.oj_codesandbox.rabbitmq.RabbitMQConfig;
+import oj.oj_codesandbox.judge.rabbitmq.RabbitMQConfig;
 import oj.oj_codesandbox.service.CommitCaseService;
 import oj.oj_codesandbox.service.QuestionService;
 import oj.oj_codesandbox.service.UserCommitService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 
 /**
@@ -55,15 +52,17 @@ public class JudgeServiceImpl implements JudgeService {
     private JudgeManager judgeManager;
     @Resource
     private RabbitTemplate rabbitTemplate;
+    private CodeSandbox codeSandboxProxy;
     
-    // 添加沙箱连接池，避免重复创建
-    private final CodeSandbox codeSandbox;
-    private final CodeSandbox codeSandboxProxy;
-    
-    public JudgeServiceImpl() {
-        // 预创建沙箱实例，避免每次判题都创建新实例
-        this.codeSandbox = CodeSandboxFactor.newInstance("remote");
-        this.codeSandboxProxy = new CodeSandboxProxy(this.codeSandbox);
+    @PostConstruct
+    public void init() {
+        if (type == null || type.trim().isEmpty()) {
+            log.warn("codesandbox.type 配置为空，使用默认值 'remote'");
+            type = "remote";
+        }
+        CodeSandbox codeSandbox = CodeSandboxFactor.newInstance(type);
+        this.codeSandboxProxy = new CodeSandboxProxy(codeSandbox);
+        log.info("代码沙箱初始化完成，类型: {}", type);
     }
     
     private static final Logger log = LoggerFactory.getLogger(JudgeServiceImpl.class);
@@ -76,151 +75,104 @@ public class JudgeServiceImpl implements JudgeService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ResponseResult<CommitResultVo> doJudge(ExecuteCodeRequest executeCodeRequest) {
-        String code = executeCodeRequest.getCode();
-        String language = executeCodeRequest.getLanguage();
-        String problemId = executeCodeRequest.getProblemId();
-        String uuid = executeCodeRequest.getUuid();
+        // 1. 参数验证
+        validateExecuteCodeRequest(executeCodeRequest);
+        
+        // 2. 保存用户提交记录
+        String commitId = saveUserCommit(executeCodeRequest);
+        
+        // 3. 保存判题状态为"等待中"
+        saveCommitCase(commitId, CommitStatusEnum.WAITING);
+        
+        // 4. 发送判题任务到队列
+        sendJudgeTask(executeCodeRequest, commitId);
+        
+        // 5. 返回提交成功响应
+        return buildSuccessResponse(commitId);
+    }
 
+    /**
+     * 验证执行代码请求参数
+     */
+    private void validateExecuteCodeRequest(ExecuteCodeRequest request) {
+        if (request == null) {
+            throw new RuntimeException("请求参数不能为空");
+        }
+        if (StrUtil.isEmptyIfStr(request.getCode())) {
+            throw new RuntimeException("代码不能为空");
+        }
+        if (StrUtil.isEmptyIfStr(request.getLanguage())) {
+            throw new RuntimeException("编程语言不能为空");
+        }
+        if (StrUtil.isEmptyIfStr(request.getProblemId())) {
+            throw new RuntimeException("题目ID不能为空");
+        }
+        if (StrUtil.isEmptyIfStr(request.getUuid())) {
+            throw new RuntimeException("用户ID不能为空");
+        }
+    }
+    
+    /**
+     * 保存用户提交记录
+     */
+    private String saveUserCommit(ExecuteCodeRequest request) {
         UserCommit commit = new UserCommit();
         String commitId = UUID.randomUUID().toString();
-        commit.setUid(uuid);
-        commit.setQid(problemId);
+        commit.setUid(request.getUuid());
+        commit.setQid(request.getProblemId());
         commit.setCommitId(commitId);
-        commit.setCode(code);
-        commit.setLanguage(language);
+        commit.setCode(request.getCode());
+        commit.setLanguage(request.getLanguage());
         commit.setCreateTime(new Date());
+        
         int save = userCommitService.insert(commit);
         if (save <= 0) {
             throw new RuntimeException("提交保存失败");
         }
-
-        // 题目保存为等待中的状态
+        return commitId;
+    }
+    
+    /**
+     * 保存判题状态
+     */
+    private void saveCommitCase(String commitId, CommitStatusEnum status) {
         CommitCase commitCase = new CommitCase();
         commitCase.setCommitId(commitId);
-        commitCase.setCnName(CommitStatusEnum.WAITING.getCnMessage());
-        commitCase.setEnglishName(CommitStatusEnum.WAITING.getEnMessage());
+        commitCase.setCnName(status.getCnMessage());
+        commitCase.setEnglishName(status.getEnMessage());
+        
         int insert = commitCaseService.insert(commitCase);
         if (insert <= 0) {
             throw new RuntimeException("提交状态保存失败");
         }
-
-        executeCodeRequest.setCommitId(commitId);
-        rabbitTemplate.convertAndSend(RabbitMQConfig.JUDGE_EXCHANGE, RabbitMQConfig.JUDGE_ROUTING_KEY, executeCodeRequest);
-
-        // 返回提交成功的响应，包含commitId供前端查询判题结果
+    }
+    
+    /**
+     * 发送判题任务到队列
+     */
+    private void sendJudgeTask(ExecuteCodeRequest request, String commitId) {
+        request.setCommitId(commitId);
+        try {
+            rabbitTemplate.convertAndSend(
+                RabbitMQConfig.JUDGE_EXCHANGE, 
+                RabbitMQConfig.JUDGE_ROUTING_KEY, 
+                request
+            );
+            log.info("判题任务已发送到队列，commitId: {}", commitId);
+        } catch (Exception e) {
+            log.error("发送判题任务失败，commitId: {}", commitId, e);
+            throw new RuntimeException("发送判题任务失败", e);
+        }
+    }
+    
+    /**
+     * 构建成功响应
+     */
+    private ResponseResult<CommitResultVo> buildSuccessResponse(String commitId) {
         CommitResultVo resultVo = new CommitResultVo();
         resultVo.setMessage("提交成功，正在判题中");
         resultVo.setCommitId(commitId);
         return ResponseResult.success(resultVo);
-    }
-
-    /**
-     * 消费消息队列中的判题任务
-     */
-    @RabbitListener(queues = RabbitMQConfig.JUDGE_QUEUE)
-    public void processJudgeTask(ExecuteCodeRequest executeCodeRequest) {
-        String commitId = executeCodeRequest.getCommitId();
-        
-        // 异步处理判题任务，提高并发性能
-        CompletableFuture.runAsync(() -> {
-            processJudgeTaskAsync(executeCodeRequest, commitId);
-        });
-    }
-    
-    /**
-     * 异步处理判题任务
-     */
-    @Async("judgeTaskExecutor")
-    public void processJudgeTaskAsync(ExecuteCodeRequest executeCodeRequest, String commitId) {
-        try {
-            // 更改状态为"判题中"
-            CommitCase commitCaseUpdate = new CommitCase();
-            commitCaseUpdate.setCommitId(commitId);
-            commitCaseUpdate.setCnName(CommitStatusEnum.RUNNING.getCnMessage());
-            commitCaseUpdate.setEnglishName(CommitStatusEnum.RUNNING.getEnMessage());
-            boolean update = commitCaseService.updateById(commitCaseUpdate);
-            if (!update) {
-                throw new RuntimeException("更新CommitCase表失败");
-            }
-
-            // 获取题目信息
-            String problemId = executeCodeRequest.getProblemId();
-            Question question = questionService.getOneQuestion(problemId);
-            if (question == null) {
-                throw new RuntimeException("题目找不到");
-            }
-
-            // 获取用户提交信息
-            UserCommit userCommit = userCommitService.getByCommitId(commitId);
-            if (userCommit == null) {
-                throw new RuntimeException("提交记录不存在");
-            }
-
-            // 调用沙箱 - 使用预创建的实例，避免重复创建
-            ExecuteCodeResponse executeCodeResponse = codeSandboxProxy.executeCode(executeCodeRequest);
-            List<String> outputList = executeCodeResponse.getOutputList();
-            JudgeInfo exeJudgeInfo = executeCodeResponse.getJudgeInfo();
-            // 沙箱执行代码获取返回对象
-            JudgeContext judgeContext = JudgeContext.builder()
-                    .exitCode(executeCodeResponse.getExitCode())
-                    .question(question)
-                    .outputList(outputList)
-                    .judgeInfo(exeJudgeInfo)
-                    .userCommit(userCommit)
-                    .build();
-
-            // 获取判题结果
-            JudgeInfo judgeInfo = judgeManager.doJudge(judgeContext);
-
-            // 更新状态
-            commitCaseUpdate = new CommitCase();
-            commitCaseUpdate.setCommitId(commitId);
-            commitCaseUpdate.setCnName(judgeInfo.getCnMessage());
-            commitCaseUpdate.setEnglishName(judgeInfo.getEnMessage());
-            commitCaseUpdate.setTime(judgeInfo.getTime());
-            commitCaseUpdate.setMemory(judgeInfo.getMemory());
-            long exitCode = judgeInfo.getExitCode();
-            if (exitCode == 0) {
-                commitCaseUpdate.setOutput(Arrays.toString(exeJudgeInfo.getCorrect()));
-            }
-
-            commitCaseService.updateById(commitCaseUpdate);
-
-            // 优化：使用事务确保数据一致性
-            try {
-                // 先更新提交总数（无论成功失败都要更新）
-                int commitResult = questionService.updateCommitCountById(problemId);
-                if (commitResult <= 0) {
-                    log.warn("更新提交总数失败，problemId: {}", problemId);
-                }
-                
-                // 再更新通过数（只有成功才更新）
-                if (judgeInfo.getCnMessage().equals(CommitStatusEnum.ACCEPTED.getCnMessage())) {
-                    int acResult = questionService.updateAcCountById(problemId);
-                    if (acResult <= 0) {
-                        log.warn("更新通过数失败，problemId: {}", problemId);
-                    }
-                }
-            } catch (Exception e) {
-                log.error("更新题目统计信息失败，problemId: {}, commitId: {}", problemId, commitId, e);
-                // 不影响主流程，只记录日志
-            }
-
-            log.info("判题任务处理成功，commitId: {}", commitId);
-
-        } catch (Exception e) {
-            log.error("判题过程发生异常，commitId: {}, 错误信息: {}", commitId, e.getMessage(), e);
-            
-            // 处理异常，更新提交状态为错误
-            CommitCase commitCaseError = new CommitCase();
-            commitCaseError.setCommitId(commitId);
-            commitCaseError.setCnName(CommitStatusEnum.FAIL.getCnMessage());
-            commitCaseError.setEnglishName(CommitStatusEnum.FAIL.getEnMessage());
-            commitCaseService.updateById(commitCaseError);
-            
-            // 抛出异常，让Spring AMQP处理重试逻辑
-            throw new RuntimeException("判题失败: " + e.getMessage(), e);
-        }
     }
 
     /**
@@ -275,10 +227,8 @@ public class JudgeServiceImpl implements JudgeService {
             throw new RuntimeException("题目找不到");
         }
 
-        // 调用沙箱
-        CodeSandbox codeSandbox = CodeSandboxFactor.newInstance(type);
-        // 代理对象 打印日志
-        codeSandbox = new CodeSandboxProxy(codeSandbox);
+        // 调用沙箱 - 使用已初始化的代理对象
+        CodeSandbox codeSandbox = codeSandboxProxy;
 
         ExecuteCodeResponse executeCodeResponse = codeSandbox.userTestCode(executeCodeRequest);
 

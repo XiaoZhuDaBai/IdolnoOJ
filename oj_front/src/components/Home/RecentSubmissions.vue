@@ -1,6 +1,9 @@
 <template>
   <div class="section">
-    <h2>最近的提交</h2>
+    <div class="section-header">
+      <h2>最近的提交</h2>
+    </div>
+
     <template v-if="!userStore.isLogin">
       <div class="login-prompt">
         <p class="prompt-text">请登录后查看提交记录</p>
@@ -207,56 +210,54 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.section {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+}
+
 .login-prompt {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 200px;
+  min-height: 240px;
 }
 
 .prompt-text {
-  font-size: 18px;
-  font-weight: bold;
-  color: #666;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
   text-align: center;
-  padding: 20px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
+  padding: var(--spacing-xl);
+  background-color: var(--color-bg);
+  border-radius: var(--radius-md);
   width: 100%;
-  max-width: 400px;
 }
 
-.section {
-  min-height: 284px;
-  max-height: none;
-  overflow: visible;
-  position: relative; /* 为loading-overlay定位 */
-}
-
-/* 优化：加载覆盖层，不影响布局 */
 .loading-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(255, 255, 255, 0.8);
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  z-index: 10;
-  border-radius: 8px;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xl);
+  color: var(--color-text-secondary);
+  font-size: 13px;
 }
 
 .loading-spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #f3f3f3;
-  border-top: 2px solid #3498db;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--color-border);
+  border-top: 2px solid var(--color-primary);
   border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 8px;
+  animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
@@ -266,20 +267,19 @@ onMounted(() => {
 
 .submission-list {
   list-style: none;
-  min-height: 200px; /* 保持最小高度，减少布局跳动 */
-  transition: opacity 0.2s ease; /* 添加过渡效果 */
-}
-
-.submission-list.loading {
-  opacity: 0.6; /* 加载时降低透明度 */
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
 }
 
 .submission-item {
-  padding: 12px 0;
-  border-bottom: 1px solid #eee;
+  padding: var(--spacing-md) 0;
+  border-bottom: 1px solid var(--color-border);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  transition: background-color 0.15s ease;
 }
 
 .submission-item:last-child {
@@ -289,88 +289,100 @@ onMounted(() => {
 .submission-info {
   display: flex;
   flex-direction: column;
+  gap: var(--spacing-xs);
+  flex: 1;
+  min-width: 0;
 }
 
 .submission-title {
-  font-weight: bold;
-  margin-bottom: 0;
+  font-weight: 500;
+  color: var(--color-text);
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .submission-meta {
   font-size: 12px;
-  color: #777;
+  color: var(--color-text-tertiary);
 }
 
 .submission-status {
-  padding: 3px 8px;
-  border-radius: 3px;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
   font-size: 12px;
-  font-weight: bold;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .status-accepted {
-  background-color: #d4edda;
-  color: #155724;
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--color-success);
 }
 
 .status-rejected {
-  background-color: #f8d7da;
-  color: #721c24;
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--color-error);
 }
 
 .status-pending {
-  background-color: #e2e3e5;
-  color: #383d41;
+  background-color: var(--color-bg);
+  color: var(--color-text-tertiary);
 }
 
 .pagination {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 20px;
-  gap: 10px;
+  margin-top: var(--spacing-lg);
+  gap: var(--spacing-md);
 }
 
 .page-btn {
-  padding: 6px 12px;
-  border: 1px solid #ddd;
-  background-color: white;
-  color: #3498db;
-  border-radius: 4px;
+  padding: 6px 14px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-primary);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 500;
   transition: all 0.2s;
 }
 
 .page-btn:hover:not(:disabled) {
-  background-color: #f8f9fa;
-  border-color: #3498db;
+  background-color: var(--color-bg);
+  border-color: var(--color-primary);
 }
 
 .page-btn:disabled {
-  color: #999;
+  color: var(--color-text-tertiary);
   cursor: not-allowed;
-  background-color: #f8f9fa;
+  background-color: var(--color-bg);
+  border-color: var(--color-border);
 }
 
 .page-info {
-  font-size: 14px;
-  color: #666;
-  margin: 0 10px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  min-width: 50px;
+  text-align: center;
 }
 
 .loading {
   text-align: center;
-  padding: 40px;
-  color: #666;
+  padding: var(--spacing-xl);
+  color: var(--color-text-secondary);
 }
 
 .no-data {
   text-align: center;
-  padding: 40px;
-  color: #999;
-  font-size: 14px;
-  min-height: 200px; /* 保持最小高度 */
+  padding: var(--spacing-xl);
+  color: var(--color-text-tertiary);
+  font-size: 13px;
+  min-height: 280px;
   display: flex;
   align-items: center;
   justify-content: center;

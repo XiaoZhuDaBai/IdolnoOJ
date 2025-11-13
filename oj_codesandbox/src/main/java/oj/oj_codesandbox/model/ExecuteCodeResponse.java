@@ -6,13 +6,15 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import oj.oj_codesandbox.judge.entity.JudgeInfo;
 
+import java.io.Serializable;
 import java.util.List;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ExecuteCodeResponse {
+public class ExecuteCodeResponse implements Serializable {
+    private static final long serialVersionUID = 1L;
     private List<String> outputList;
     /**
      * 接口信息

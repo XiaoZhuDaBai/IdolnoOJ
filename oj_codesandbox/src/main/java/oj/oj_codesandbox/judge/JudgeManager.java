@@ -4,13 +4,20 @@ package oj.oj_codesandbox.judge;
 import oj.oj_codesandbox.judge.entity.JudgeContext;
 import oj.oj_codesandbox.judge.entity.JudgeInfo;
 import oj.oj_codesandbox.judge.strategy.JudgeStrategy;
-import oj.oj_codesandbox.judge.strategy.impl.DefaultJudgeStrategy;
-import oj.oj_codesandbox.judge.strategy.impl.JavaJudgeStrategy;
+import oj.oj_codesandbox.judge.strategy.impl.FasterLanguageJudgeStrategy;
+import oj.oj_codesandbox.judge.strategy.impl.SlowerLanguageJudgeStrategy;
 import oj.oj_codesandbox.model.dto.UserCommit;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class JudgeManager {
+
+    @Autowired
+    private FasterLanguageJudgeStrategy fasterLanguageJudgeStrategy;
+
+    @Autowired
+    private SlowerLanguageJudgeStrategy slowerLanguageJudgeStrategy;
     public JudgeInfo doJudge(JudgeContext judgeContext) {
         UserCommit userCommit = judgeContext.getUserCommit();
         String language = userCommit.getLanguage();
@@ -18,7 +25,6 @@ public class JudgeManager {
         return judgeStrategy.doJudge(judgeContext);
     }
 
-    //todo
     public JudgeInfo doTest(JudgeContext judgeContext) {
         String language = judgeContext.getLanguage();
         JudgeStrategy judgeStrategy = getStrategyByLanguage(language);
@@ -27,12 +33,10 @@ public class JudgeManager {
 
     //todo 补充语言种类的
     private JudgeStrategy getStrategyByLanguage(String language) {
-        JudgeStrategy judgeStrategy;
         if ("java".equals(language)) {
-            judgeStrategy = new JavaJudgeStrategy();
+            return slowerLanguageJudgeStrategy;
         } else {
-            judgeStrategy = new DefaultJudgeStrategy();
+            return fasterLanguageJudgeStrategy;
         }
-        return judgeStrategy;
     }
 }

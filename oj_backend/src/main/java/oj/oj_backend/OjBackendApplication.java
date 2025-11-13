@@ -83,7 +83,7 @@ public class OjBackendApplication {
                             throw new CompletionException(e);
                         }
                     }))
-                    .collect(Collectors.toList());
+                    .toList();
             // 合并所有结果
             logger.info("开始合并各平台数据...");
             List<ContestResponse> allContests = futures.stream()
@@ -97,7 +97,7 @@ public class OjBackendApplication {
                     })
                     .filter(Objects::nonNull)
                     .flatMap(List::stream)
-                    .collect(Collectors.toList());
+                    .toList();
 
             logger.info("合并完成，总竞赛数量: {}", allContests.size());
             // 批量插入Redis

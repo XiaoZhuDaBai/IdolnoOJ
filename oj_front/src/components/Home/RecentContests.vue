@@ -39,7 +39,7 @@
             target="_blank"
             class="contest-name"
           >
-            {{ contest.name }}
+            <span>{{ contest.name }}</span>
             <span class="contest-oj-tag">{{ contest.oj }}</span>
           </a>
           <div class="contest-meta">
@@ -103,6 +103,12 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.section {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 .contest-container {
   height: 100%;
   display: flex;
@@ -113,35 +119,38 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: var(--spacing-lg);
 }
 
 .view-all {
-  font-size: 14px;
-  color: #3498db;
+  font-size: 13px;
+  color: var(--color-primary);
   text-decoration: none;
+  font-weight: 500;
+  transition: opacity 0.2s;
 }
 
 .view-all:hover {
-  text-decoration: underline;
+  opacity: 0.7;
 }
 
 .loading {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 20px;
-  color: #666;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xl);
+  color: var(--color-text-secondary);
+  font-size: 13px;
 }
 
 .loading-spinner {
   width: 24px;
   height: 24px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #3498db;
+  border: 2px solid var(--color-border);
+  border-top: 2px solid var(--color-primary);
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin {
@@ -152,175 +161,170 @@ onMounted(async () => {
 .error {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 15px;
-  background: #fff2f0;
-  border: 1px solid #ffccc7;
-  border-radius: 6px;
-  color: #ff4d4f;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: var(--radius-md);
+  color: var(--color-error);
+  font-size: 13px;
 }
 
 .error-icon {
-  width: 20px;
-  height: 20px;
-  background: #ff4d4f;
+  width: 18px;
+  height: 18px;
+  background: var(--color-error);
   color: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
+  font-size: 12px;
+  flex-shrink: 0;
 }
 
 .contest-list {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--spacing-md);
 }
 
 .contest-item {
   display: flex;
   align-items: center;
-  padding: 12px 15px;
-  border-radius: 6px;
-  background-color: #fff;
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg);
   margin-bottom: 0;
   transition: all 0.2s;
-  border: 1px solid #eee;
+  border: 1px solid transparent;
   flex-shrink: 0;
 }
 
 .contest-item:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background-color: var(--color-surface);
+  border-color: var(--color-border);
 }
 
 .contest-time {
-  min-width: 100px;
+  min-width: 80px;
   text-align: center;
-  margin-right: 15px;
+  margin-right: var(--spacing-md);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: var(--spacing-xs);
 }
 
 .contest-date {
-  font-weight: bold;
-  color: #2c3e50;
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: 13px;
 }
 
 .contest-duration {
-  font-size: 12px;
-  color: #7f8c8d;
+  font-size: 11px;
+  color: var(--color-text-tertiary);
 }
 
 .countdown {
-  font-size: 12px;
-  color: #e74c3c;
+  font-size: 11px;
+  color: var(--color-error);
   font-weight: 500;
 }
 
 .contest-info {
   flex: 1;
+  min-width: 0;
 }
 
 .contest-name {
-  font-weight: bold;
-  margin-bottom: 5px;
-  color: #2c3e50;
+  font-weight: 500;
+  margin-bottom: var(--spacing-xs);
+  color: var(--color-text);
   text-decoration: none;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
   transition: color 0.2s;
+  font-size: 14px;
+  min-width: 0;
+}
+
+.contest-name > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
 }
 
 .contest-name:hover {
-  color: #3498db;
+  color: var(--color-primary);
 }
 
 .contest-oj-tag {
-  font-size: 11px;
+  font-size: 10px;
   padding: 2px 6px;
-  background: #f0f0f0;
-  border-radius: 3px;
-  color: #666;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  flex-shrink: 0;
 }
 
 .contest-meta {
   display: flex;
   align-items: center;
-  font-size: 12px;
-  color: #7f8c8d;
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  gap: var(--spacing-sm);
 }
 
 .contest-status {
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-weight: bold;
-  margin-right: 10px;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
 }
 
 .contest-status.upcoming {
-  background-color: #fff3e0;
-  color: #f57c00;
+  background-color: rgba(245, 158, 11, 0.1);
+  color: var(--color-warning);
 }
 
 .contest-status.running {
-  background-color: #e8f5e9;
-  color: #2e7d32;
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--color-success);
 }
 
 .contest-status.ended {
-  background-color: #f5f5f5;
-  color: #757575;
+  background-color: var(--color-bg);
+  color: var(--color-text-tertiary);
 }
 
 .contest-phase {
-  font-size: 11px;
-  color: #666;
-  background: #f5f5f5;
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+  background: var(--color-bg);
   padding: 2px 6px;
-  border-radius: 3px;
-}
-
-.contest-phase[data-phase="初级"] {
-  background: #3498db;
-  color: white;
-}
-
-.contest-phase[data-phase="常规"] {
-  background: #e74c3c;
-  color: white;
-}
-
-.contest-phase[data-phase="高级"] {
-  background: #2ecc71;
-  color: white;
-}
-
-.contest-phase[data-phase="启发式算法"] {
-  background: #9b59b6;
-  color: white;
-}
-
-.contest-phase[data-phase="其他"] {
-  background: #95a5a6;
-  color: white;
+  border-radius: var(--radius-sm);
 }
 
 .contest-action {
   flex-shrink: 0;
-  width: 90px;
+  width: 80px;
   text-align: right;
 }
 
 .btn {
   border: none;
-  padding: 5px 12px;
-  border-radius: 4px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
   font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
   text-decoration: none;
@@ -328,44 +332,45 @@ onMounted(async () => {
 }
 
 .btn.register {
-  background-color: #3498db;
+  background-color: var(--color-primary);
   color: white;
 }
 
 .btn.register:hover {
-  background-color: #2878b5;
+  opacity: 0.9;
 }
 
 .btn.enter {
-  background-color: #27ae60;
+  background-color: var(--color-success);
   color: white;
 }
 
 .btn.enter:hover {
-  background-color: #219653;
+  opacity: 0.9;
 }
 
 .contest-ended {
-  color: #a0a0a0;
-  font-size: 14px;
+  color: var(--color-text-tertiary);
+  font-size: 12px;
 }
 
 .no-contests {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 6px;
-  color: #7f8c8d;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xl);
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  color: var(--color-text-tertiary);
 }
 
 .no-contests-icon {
-  font-size: 24px;
+  font-size: 32px;
+  opacity: 0.5;
 }
 
 .no-contests-text {
-  font-style: italic;
+  font-size: 13px;
 }
 </style>
