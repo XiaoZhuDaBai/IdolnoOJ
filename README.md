@@ -46,7 +46,7 @@ Maven、Node.js 16、IntelliJ IDEA 或 VS Code、Docker Desktop
 
 ## 运行前置条件
 
-- Java 11 或更高
+- Java 17 或更高
 - Node.js 16 与 npm
 - MySQL 8.0（初始化执行 `database.sql`）
 - Redis 7.0
